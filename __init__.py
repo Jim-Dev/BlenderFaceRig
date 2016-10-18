@@ -1,17 +1,17 @@
 """
-**Project Name:**      MakeHuman
+**Project Name:**      Shape key bake
 
-**Product Home Page:** http://www.makehuman.org/
+**Product Home Page:** https://github.com/Jim-Dev/BlenderFaceRig
 
-**Code Home Page:**    https://bitbucket.org/MakeHuman/makehuman/
+**Code Home Page:**    https://github.com/Jim-Dev/BlenderFaceRig
 
-**Authors:**           Thomas Larsson
+**Authors:**           Jimmy Toledo
 
-**Copyright(c):**      MakeHuman Team 2001-2016
+**Copyright(c):**      
 
 **Licensing:**         AGPL3
 
-    This file is part of MakeHuman (www.makehuman.org).
+    
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as
@@ -39,8 +39,8 @@ import json
 #from ui_buttons import Save_ShapeKey_Button
 
 bl_info = {
-    "name": "New Object",
-    "author": "Your Name Here",
+    "name": "Shape key bake",
+    "author": "Jimmy Toledo",
     "version": (1, 0),
     "blender": (2, 75, 0),
     "location": "View3D > Add > Mesh > New Object",
@@ -53,6 +53,7 @@ bl_info = {
 targetPath = "D:\CustomTarget"
 fname = ""
 ext=""
+SK_PREFIX = "NEW_"
 
 def MuteAllShapeKeys():
     for shapeKey in bpy.context.object.data.shape_keys.key_blocks:
@@ -112,14 +113,19 @@ class SaveShapeKey_Button(bpy.types.Operator):
         (fname,ext) = os.path.splitext(targetPath)
         filepath = fname + ".target"
 
-        DefVertex = GetDeformVertex(bpy.context.object.active_shape_key_index)
-        JsonVertexDump = json.dumps(DefVertex, sort_keys=True,indent=4, separators=(',', ': '))
+        GetActiveShapeKey().value = GetActiveShapeKey().slider_max
 
+        DefVertex = GetDeformVertex(bpy.context.object.active_shape_key_index)
+        #JsonVertexDump = json.dumps(DefVertex, sort_keys=True,indent=4, separators=(',', ': '))
+        
+        ShapeKeyEntry = {}
+        ShapeKeyEntry[bpy.context.object.active_shape_key.name]=DefVertex
+        JsonVertexDump = json.dumps(ShapeKeyEntry, sort_keys=True,indent=4, separators=(',', ': '))
         
         with open(filepath, 'w') as f:
             f.write(JsonVertexDump)
         f.closed
-        
+        GetActiveShapeKey().value = 0
         
         print(GetDeformVertex(bpy.context.object.active_shape_key_index))
         print("\n")
@@ -143,19 +149,51 @@ class LoadShapeKey_Button(bpy.types.Operator):
 
 
         deserializedContent = json.loads(fileContent)
-
+        '''
         print ("JSON BEGIN!!!!")
         vertexIndices = deserializedContent.keys()
         for vertexIndex in vertexIndices:
             print (vertexIndex)
             print(deserializedContent[vertexIndex])
         print ("JSON END!!!!")
+'''     
+        shapeKeyNames = deserializedContent.keys()
+        '''
+        for shapeKeyName in shapeKeyNames:
+            print(shapeKeyName)
+            vertexStructure = deserializedContent[shapeKeyName]
+            vertexIndices = vertexStructure.keys()
+            
+            #vertexIndices = shapeKeyName.values()
+            for vertexIndex in vertexIndices:
+                print (vertexIndex)
+                print(vertexStructure[str(vertexIndex)])
         
-        
+        '''
         ResetAllShapeKeys()
         
-       
         
+        for shapeKeyName in shapeKeyNames:
+            print(shapeKeyName)
+            if (shapeKeyName in bpy.context.object.data.shape_keys.key_blocks.keys()):
+                bpy.context.object.shape_key_add(SK_PREFIX+shapeKeyName)
+            else:
+                bpy.context.object.shape_key_add(shapeKeyName)
+                
+            vertexStructure = deserializedContent[shapeKeyName]
+            vertexIndices = vertexStructure.keys()
+            
+            #vertexIndices = shapeKeyName.values()
+            for vertexIndex in vertexIndices:
+                print (vertexIndex)
+                print(vertexStructure[str(vertexIndex)])
+                print(vertexStructure[str(vertexIndex)][0])
+                
+                bpy.context.object.data.shape_keys.key_blocks[shapeKeyName].data[int(vertexIndex)].co.x = vertexStructure[vertexIndex][0]
+                bpy.context.object.data.shape_keys.key_blocks[shapeKeyName].data[int(vertexIndex)].co.y = vertexStructure[vertexIndex][1]
+                bpy.context.object.data.shape_keys.key_blocks[shapeKeyName].data[int(vertexIndex)].co.z = vertexStructure[vertexIndex][2]
+       
+        '''
         bpy.context.object.shape_key_add("NewProcSK")
         for vertexIndex in vertexIndices:
             print(deserializedContent[vertexIndex])
@@ -163,7 +201,7 @@ class LoadShapeKey_Button(bpy.types.Operator):
             bpy.context.object.data.shape_keys.key_blocks["NewProcSK"].data[int(vertexIndex)].co.y = deserializedContent[vertexIndex][1]
             bpy.context.object.data.shape_keys.key_blocks["NewProcSK"].data[int(vertexIndex)].co.z = deserializedContent[vertexIndex][2]
         print ("JSON END!!!!")
-        
+        '''
         
         return {'FINISHED'} 
 
@@ -197,6 +235,13 @@ class ShapeKeyInfo_Panel(bpy.types.Panel):
         row = layout.row()
         row.operator("sk.save", text="Save ShapeKey",icon='INLINK')   
         row.operator("sk.load", text="Load ShapeKey",icon='INLINK')   
+        
+        box6 = layout.row().box()
+        col= box6.column()
+        row=box6.row(align=True)
+        col.label(text='SK Name:') 
+        row.prop(context.scene,'FBX_base_name', expand=True)                       
+        col.prop(context.scene,'FBX_Export_Custom_Name',text = "Custom Name")
     
 classes = [
     SaveShapeKey_Button,
