@@ -114,12 +114,8 @@ class ReadShapeKey(bpy.types.Panel):
         row = layout.row()
         row.label(text="Active object is: " + obj.name)
         row = layout.row()
-        row.label(text="Active object is: " + obj.active_shape_key.name)
+        row.label(text="Active shape key is: " + obj.active_shape_key.name)
 
-        row = box.row()
-        # add an enum property menu
-        # this allows only certain values to be set for a property
-        box.prop_menu_enum(context.scene, 'test_enum', text='enum property', icon='NLA')
 
 
 def register():
